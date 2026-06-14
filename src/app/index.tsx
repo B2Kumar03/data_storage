@@ -1,48 +1,150 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Button, Text } from 'react-native'
 import React from 'react'
-import * as SecureStore from 'expo-secure-store'
-import { Button } from '@react-navigation/elements'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import * as SQLite from 'expo-sqlite'
 
-const index = () => {
-  const [output, setOutput] = React.useState('')
-  const saveToken = async () => {
-    await SecureStore.setItemAsync('token', '123abc')
+const db = SQLite.openDatabaseSync('db.db')
+
+const SQlite = () => {
+  const [output , setOutput] = React.useState<string>('')
+
+  const createTable = () => {
+    db.execSync(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT,
+        password TEXT
+      );
+    `)
+    setOutput("Table created")
+
+    console.log("Table created")
   }
-  const getToken = async () => {
-    const token = await SecureStore.getItemAsync('token')
-    setOutput(token!)
-    console.log(token)
+
+
+  const insertUser = () => {
+//before insertion check the table availability
+
+    db.execSync(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT,
+        password TEXT
+      );
+    `)
+
+    const result = db.runSync(
+      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
+      [
+        "bittu",
+        "bittu@gmail.com",
+        "1234"
+      ]
+    )
+
+    setOutput("Inserted ID: " + result.lastInsertRowId)
+
+    console.log("Inserted ID:", result.lastInsertRowId)
   }
-  const removeToken = async () => {
-    await SecureStore.deleteItemAsync('token')
-    setOutput('')
+
+
+
+  const selectUser = () => {
+
+    const users = db.getAllSync(
+      'SELECT * FROM users'
+    )
+    console.log(users)
+
+    setOutput(JSON.stringify(users))
+
   }
-  const checkAvailability = async () => {
-    const result = await SecureStore.isAvailableAsync()
-    setOutput(result ? 'Available' : 'Not Available')
+
+//clear table
+  const clearTable = () => {
+    db.runSync('DELETE FROM users')
+    setOutput("Table cleared")
   }
-  const setObject = async () => {
-    await SecureStore.setItemAsync('user', JSON.stringify({ name: 'John Doe', age: 30 }))
+
+  const update=() => {
+    db.runSync('UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?',
+    [
+      "bittuKumsri",
+      "bittu@gmail.com",
+      "1234",
+      1
+    ]
+    )
+    setOutput("Table updated")
   }
-  const getObject = async () => {
-    const user = await SecureStore.getItemAsync('user')
-    setOutput(user!)
+
+  //drop table
+  const dropTable = () => {
+    db.runSync('DROP TABLE users')
+    setOutput("Table dropped")
   }
+
   return (
-    <View style={{ flex: 1, alignItems: 'center',gap:10 }}>
-      <Text style={{ fontSize: 20, fontWeight: 'bold',marginTop:20 }}>Secure Storage</Text>
-      <Button onPress={saveToken}>Save Token</Button>
-      <Button onPress={getToken}>Get Token</Button>
-      <Button onPress={removeToken}>Remove Token</Button>
-      <Button onPress={checkAvailability}>Check Availability</Button>
-      <Button onPress={setObject}>Set Object</Button>
-      <Button onPress={getObject}>Get Object</Button>
-      <Text> Output :{output}</Text>
+    <SafeAreaView 
+      style={{
+        flex:1,
+        alignItems:'center',
+        justifyContent:'center',
+        gap:20
+      }}
+    >
 
-    </View>
+      <Text style={{fontSize:30,fontWeight:'bold'}}>
+        SQLite Database
+      </Text>
+
+
+      <Button 
+        title="Create Table" 
+        onPress={createTable}
+      />
+
+
+      <Button 
+        title="Insert User" 
+        onPress={insertUser}
+      />
+
+
+      <Button 
+        title="Select User" 
+        onPress={selectUser}
+      />
+
+
+      <Button 
+        title="Clear Table" 
+        onPress={clearTable}
+      />
+
+
+      <Button 
+        title="Update User" 
+        onPress={update}
+      />
+
+
+      <Button 
+        title="Drop Table" 
+        onPress={dropTable}
+      />
+
+
+      <Text>
+        Output:
+        {output}
+      </Text>
+
+    </SafeAreaView>
   )
 }
 
-export default index
 
-const styles = StyleSheet.create({})
+export default SQlite
